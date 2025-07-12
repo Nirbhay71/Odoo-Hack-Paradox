@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StackIt - OCR Text Extraction</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/4.1.1/tesseract.min.js"></script>
+    <!-- Add this in the head section of your HTML files -->
+<script src="js/config.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f5dc, #e8dcc0);
+            min-height: 100vh;
+            color: #4a4a4a;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 30px 0;
+            background: rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .logo {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #8b4513;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: #666;
+            font-weight: 300;
+        }
+
+        .upload-section {
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .upload-area {
+            border: 3px dashed #d2b48c;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-area:hover {
+            border-color: #8b4513;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .upload-area.dragover {
+            border-color: #8b4513;
+            background: rgba(139, 69, 19, 0.1);
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            color: #8b4513;
+            margin-bottom: 20px;
+        }
+
+        .upload-text {
+            font-size: 1.1rem;
+            color: #666;
+            margin-bottom: 15px;
+        }
+
+        .upload-hint {
+            font-size: 0.9rem;
+            color: #999;
+            margin-bottom: 20px;
+        }
+
+        #image-input {
+            display: none;
+        }
+
+        .upload-btn {
+            background: linear-gradient(45deg, #8b4513, #a0522d);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(139, 69, 19, 0.3);
+        }
+
+        .upload-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(139, 69, 19, 0.4);
+        }
+
+        .status-section {
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        #status-message {
+            text-align: center;
+            font-size: 1.1rem;
+            color: #8b4513;
+            font-weight: 500;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+            margin-top: 15px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #8b4513, #a0522d);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        .result-section {
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .result-header {
+            font-size: 1.3rem;
+            color: #8b4513;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        #result {
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 10px;
+            padding: 20px;
+            min-height: 150px;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: #333;
+            border: 1px solid rgba(210, 180, 140, 0.3);
+        }
+
+        .result-actions {
+            margin-top: 20px;
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .action-btn {
+            background: linear-gradient(45deg, #8b4513, #a0522d);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(139, 69, 19, 0.3);
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(139, 69, 19, 0.4);
+        }
+
+        .action-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .error-message {
+            color: #d32f2f;
+            background: rgba(211, 47, 47, 0.1);
+            border: 1px solid rgba(211, 47, 47, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 10px;
+        }
+
+        .success-message {
+            color: #2e7d32;
+            background: rgba(46, 125, 50, 0.1);
+            border: 1px solid rgba(46, 125, 50, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .logo {
+                font-size: 2rem;
+            }
+            
+            .upload-section, .result-section {
+                padding: 20px;
+            }
+            
+            .upload-area {
+                padding: 30px 20px;
+            }
+            
+            .result-actions {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">StackIt</div>
+            <div class="subtitle">OCR Text Extraction Tool</div>
+        </div>
+
+        <div class="upload-section">
+            <div class="upload-area" id="upload-area">
+                <div class="upload-icon">📄</div>
+                <div class="upload-text">Drop your image here or click to upload</div>
+                <div class="upload-hint">Supports JPG, PNG, GIF, BMP, TIFF formats</div>
+                <button class="upload-btn" onclick="document.getElementById('image-input').click()">
+                    Choose Image
+                </button>
+                <input type="file" id="image-input" accept="image/*">
+            </div>
+        </div>
+
+        <div class="status-section">
+            <div id="status-message">Ready to process your image</div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill"></div>
+            </div>
+        </div>
+
+        <div class="result-section">
+            <div class="result-header">Extracted Text</div>
+            <div id="result">Upload an image to extract text...</div>
+            <div class="result-actions">
+                <button class="action-btn" id="copy-btn" onclick="copyToClipboard()" disabled>
+                    Copy Text
+                </button>
+                <button class="action-btn" id="download-btn" onclick="downloadText()" disabled>
+                    Download Text
+                </button>
+                <button class="action-btn" id="clear-btn" onclick="clearResults()" disabled>
+                    Clear Results
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variable to store worker instance
+        let worker = null;
+        let extractedText = '';
+
+        // Function to initialize Tesseract worker
+        async function initializeWorker() {
+            try {
+                if (!worker) {
+                    console.log('Initializing Tesseract worker...');
+                    worker = await Tesseract.createWorker({
+                        logger: progress => {
+                            const statusMsg = document.getElementById('status-message');
+                            const progressFill = document.getElementById('progress-fill');
+                            
+                            if (statusMsg && progressFill) {
+                                const percentage = Math.round(progress.progress * 100);
+                                statusMsg.textContent = `${progress.status} - ${percentage}%`;
+                                progressFill.style.width = `${percentage}%`;
+                            }
+                        }
+                    });
+                    
+                    await worker.loadLanguage('eng');
+                    await worker.initialize('eng');
+                    console.log('Worker initialized successfully');
+                }
+                return worker;
+            } catch (error) {
+                console.error('Worker initialization error:', error);
+                throw new Error('Failed to initialize OCR engine');
+            }
+        }
+
+        // Function to handle image processing and OCR
+        async function processImage(imageFile) {
+            const statusMsg = document.getElementById('status-message');
+            const resultDiv = document.getElementById('result');
+            const progressFill = document.getElementById('progress-fill');
+            
+            try {
+                // Validate file
+                if (!imageFile) {
+                    throw new Error('No image file provided');
+                }
+
+                // Validate file type
+                if (!imageFile.type.startsWith('image/')) {
+                    throw new Error('Selected file is not an image');
+                }
+
+                // Clear previous results
+                resultDiv.textContent = '';
+                statusMsg.textContent = 'Starting image processing...';
+                progressFill.style.width = '0%';
+                updateActionButtons(false);
+
+                // Initialize worker
+                const worker = await initializeWorker();
+
+                // Convert image to base64
+                const imageData = await fileToBase64(imageFile);
+                
+                statusMsg.textContent = 'Performing OCR...';
+                
+                // Perform OCR
+                const result = await worker.recognize(imageData);
+                
+                statusMsg.textContent = 'Processing complete!';
+                progressFill.style.width = '100%';
+
+                return result.data.text;
+                
+            } catch (error) {
+                console.error('Detailed OCR Error:', error);
+                throw new Error(`OCR processing failed: ${error.message}`);
+            }
+        }
+
+        // Helper function to convert File to base64
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = (error) => reject(new Error('File reading failed: ' + error.message));
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // Function to update action buttons
+        function updateActionButtons(enabled) {
+            const copyBtn = document.getElementById('copy-btn');
+            const downloadBtn = document.getElementById('download-btn');
+            const clearBtn = document.getElementById('clear-btn');
+            
+            copyBtn.disabled = !enabled;
+            downloadBtn.disabled = !enabled;
+            clearBtn.disabled = !enabled;
+        }
+
+        // Function to copy text to clipboard
+        async function copyToClipboard() {
+            try {
+                await navigator.clipboard.writeText(extractedText);
+                showMessage('Text copied to clipboard!', 'success');
+            } catch (error) {
+                showMessage('Failed to copy text', 'error');
+            }
+        }
+
+        // Function to download text as file
+        function downloadText() {
+            const blob = new Blob([extractedText], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'extracted_text.txt';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Function to clear results
+        function clearResults() {
+            const resultDiv = document.getElementById('result');
+            const statusMsg = document.getElementById('status-message');
+            const progressFill = document.getElementById('progress-fill');
+            
+            resultDiv.textContent = 'Upload an image to extract text...';
+            statusMsg.textContent = 'Ready to process your image';
+            progressFill.style.width = '0%';
+            extractedText = '';
+            updateActionButtons(false);
+        }
+
+        // Function to show messages
+        function showMessage(message, type) {
+            const resultDiv = document.getElementById('result');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = type === 'success' ? 'success-message' : 'error-message';
+            messageDiv.textContent = message;
+            
+            // Insert message before result div
+            resultDiv.parentNode.insertBefore(messageDiv, resultDiv);
+            
+            // Remove message after 3 seconds
+            setTimeout(() => {
+                messageDiv.remove();
+            }, 3000);
+        }
+
+        // Setup drag and drop functionality
+        function setupDragDrop() {
+            const uploadArea = document.getElementById('upload-area');
+            
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+            
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('dragover');
+            });
+            
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    handleFileUpload(files[0]);
+                }
+            });
+        }
+
+        // Handle file upload
+        async function handleFileUpload(file) {
+            const statusMsg = document.getElementById('status-message');
+            const resultDiv = document.getElementById('result');
+            
+            try {
+                console.log('Processing file:', file.name, 'Size:', file.size, 'Type:', file.type);
+                
+                const text = await processImage(file);
+                
+                if (text.trim()) {
+                    extractedText = text;
+                    resultDiv.textContent = text;
+                    updateActionButtons(true);
+                    showMessage('Text extraction completed successfully!', 'success');
+                } else {
+                    resultDiv.textContent = 'No text was detected in the image.';
+                    showMessage('No text detected in the image', 'error');
+                }
+                
+            } catch (error) {
+                console.error('Processing error:', error);
+                statusMsg.textContent = 'Error occurred during processing';
+                
+                const errorHtml = `
+                    <div class="error-message">
+                        <strong>Error:</strong> ${error.message}<br><br>
+                        <strong>Troubleshooting tips:</strong><br>
+                        • Ensure the image is clear and readable<br>
+                        • Try a different image format (JPG, PNG)<br>
+                        • Check if the image size is reasonable<br>
+                        • Make sure you have a stable internet connection
+                    </div>
+                `;
+                
+                resultDiv.innerHTML = errorHtml;
+            }
+        }
+
+        // Initialize when document is ready
+        document.addEventListener('DOMContentLoaded', () => {
+            setupDragDrop();
+            
+            // Setup file input
+            const fileInput = document.getElementById('image-input');
+            fileInput.addEventListener('change', (event) => {
+                const file = event.target.files[0];
+                if (file) {
+                    handleFileUpload(file);
+                }
+            });
+        });
+
+        // Cleanup function
+        window.addEventListener('unload', async () => {
+            if (worker) {
+                await worker.terminate();
+                worker = null;
+            }
+        });
+    </script>
+</body>
+</html>

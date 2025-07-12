@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StackIt - Ask Question</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/services.js"></script>
+  <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+  <style>
+    :root {
+      --beige-50: #fefdf8;
+      --beige-100: #fdf8f0;
+      --beige-200: #f9f0e1;
+      --beige-300: #f4e6d2;
+      --beige-400: #e8d5b7;
+      --beige-500: #d4b896;
+      --beige-600: #b89968;
+      --beige-700: #9c7c47;
+      --beige-800: #7a5f35;
+      --beige-900: #5c4728;
+      --beige-950: #3d2f1c;
+    }
+
+    * {
+      transition: all 0.3s ease;
+    }
+
+    body {
+      background: linear-gradient(135deg, var(--beige-50) 0%, var(--beige-100) 100%);
+      color: var(--beige-950);
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+    }
+
+    .glass-effect {
+      background: rgba(254, 253, 248, 0.85);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(212, 184, 150, 0.3);
+      box-shadow: 0 8px 32px rgba(212, 184, 150, 0.15);
+    }
+
+    .nav-shadow {
+      box-shadow: 0 4px 20px rgba(212, 184, 150, 0.25);
+    }
+
+    .form-shadow {
+      box-shadow: 0 20px 60px rgba(212, 184, 150, 0.3);
+    }
+
+    .input-field {
+      background: var(--beige-50);
+      border: 2px solid var(--beige-200);
+      color: var(--beige-900);
+      transition: all 0.3s ease;
+    }
+
+    .input-field:focus {
+      border-color: var(--beige-500);
+      box-shadow: 0 0 0 3px rgba(212, 184, 150, 0.2);
+      outline: none;
+    }
+
+    .input-field::placeholder {
+      color: var(--beige-600);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--beige-600) 0%, var(--beige-700) 100%);
+      color: white;
+      border: none;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      box-shadow: 0 4px 15px rgba(212, 184, 150, 0.4);
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, var(--beige-700) 0%, var(--beige-800) 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(212, 184, 150, 0.5);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      border: 2px solid var(--beige-600);
+      color: var(--beige-700);
+      font-weight: 600;
+    }
+
+    .btn-secondary:hover {
+      background: var(--beige-600);
+      color: white;
+    }
+
+    .quill-editor {
+      background: var(--beige-50);
+      border: 2px solid var(--beige-200);
+      border-radius: 0.75rem;
+      transition: all 0.3s ease;
+    }
+
+    .quill-editor:focus-within {
+      border-color: var(--beige-500);
+      box-shadow: 0 0 0 3px rgba(212, 184, 150, 0.2);
+    }
+
+    .ql-toolbar {
+      border-top: none;
+      border-left: none;
+      border-right: none;
+      border-bottom: 2px solid var(--beige-200);
+      background: var(--beige-100);
+      border-radius: 0.75rem 0.75rem 0 0;
+    }
+
+    .ql-container {
+      border: none;
+      color: var(--beige-900);
+      font-family: inherit;
+    }
+
+    .ql-editor {
+      min-height: 120px;
+      font-size: 16px;
+      line-height: 1.6;
+    }
+
+    .ql-editor::placeholder {
+      color: var(--beige-600);
+      font-style: italic;
+    }
+
+    .label-text {
+      color: var(--beige-800);
+      font-weight: 600;
+      font-size: 0.95rem;
+      letter-spacing: 0.3px;
+    }
+
+    .form-container {
+      background: var(--beige-50);
+      border: 2px solid var(--beige-200);
+    }
+
+    .logo-text {
+      background: linear-gradient(135deg, var(--beige-700) 0%, var(--beige-800) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+
+    .profile-img {
+      border: 3px solid var(--beige-300);
+      transition: all 0.3s ease;
+    }
+
+    .profile-img:hover {
+      border-color: var(--beige-500);
+      transform: scale(1.05);
+    }
+
+    .floating-elements {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    .floating-circle {
+      position: absolute;
+      border-radius: 50%;
+      background: linear-gradient(135deg, rgba(212, 184, 150, 0.1) 0%, rgba(212, 184, 150, 0.05) 100%);
+      animation: float 6s ease-in-out infinite;
+    }
+
+    .floating-circle:nth-child(1) {
+      width: 80px;
+      height: 80px;
+      top: 20%;
+      left: 10%;
+      animation-delay: 0s;
+    }
+
+    .floating-circle:nth-child(2) {
+      width: 120px;
+      height: 120px;
+      top: 60%;
+      right: 15%;
+      animation-delay: 2s;
+    }
+
+    .floating-circle:nth-child(3) {
+      width: 60px;
+      height: 60px;
+      bottom: 30%;
+      left: 20%;
+      animation-delay: 4s;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-20px) rotate(180deg); }
+    }
+
+    .tag-input {
+      position: relative;
+    }
+
+    .tag-hint {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--beige-500);
+      font-size: 0.8rem;
+      pointer-events: none;
+    }
+    .links {
+      color: inherit;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="floating-elements">
+    <div class="floating-circle"></div>
+    <div class="floating-circle"></div>
+    <div class="floating-circle"></div>
+  </div>
+
+  <nav class="flex items-center justify-between p-6 glass-effect nav-shadow sticky top-0 z-50">
+    <h1 class="text-3xl font-bold logo-text">StackIt</h1>
+    <div class="flex items-center gap-6">
+      <div class="relative">
+        <img src="https://i.imgur.com/4Zz5GkS.png" 
+             class="w-12 h-12 rounded-full profile-img object-cover" 
+             alt="Profile">
+        <div class="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white"></div>
+      </div>
+      <a href="login.html" class="links"><button class="btn-secondary px-6 py-3 rounded-full">Login</button></a>
+    </div>
+  </nav>
+
+  <main class="p-8 flex justify-center min-h-screen">
+    <div class="w-full max-w-3xl">
+      <div class="text-center mb-8">
+        <h2 class="text-4xl font-bold mb-3" style="color: var(--beige-800);">Ask Your Question</h2>
+        <p class="text-lg" style="color: var(--beige-600);">Share your knowledge and connect with the community</p>
+      </div>
+
+      <div class="form-container p-8 rounded-2xl form-shadow">
+        <div class="space-y-6">
+          <div>
+            <label class="block label-text mb-3">Question Title</label>
+            <input id="title" 
+                   type="text" 
+                   class="w-full p-4 rounded-xl input-field text-lg"
+                   placeholder="What would you like to know?">
+          </div>
+
+          <div>
+            <label class="block label-text mb-3">Detailed Description</label>
+            <div id="editor" class="quill-editor"></div>
+          </div>
+
+          <div class="tag-input">
+            <label class="block label-text mb-3">Tags</label>
+            <input id="tags" 
+                   type="text" 
+                   class="w-full p-4 rounded-xl input-field text-lg pr-20"
+                   placeholder="javascript, react, nodejs">
+            <span class="tag-hint">comma separated</span>
+          </div>
+
+          <div class="flex gap-4 pt-4">
+            <button onclick="submitQuestion()" 
+                    class="flex-1 btn-primary p-4 rounded-xl text-lg font-semibold">
+              Publish Question
+            </button>
+            <button class="btn-secondary px-8 py-4 rounded-xl text-lg">
+              Save Draft
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+  <script>
+    const quill = new Quill('#editor', {
+      theme: 'snow',
+      placeholder: 'Describe your question in detail. The more context you provide, the better answers you\'ll receive...',
+      modules: {
+        toolbar: [
+          ['bold', 'italic', 'underline', 'strike'],
+          [{ 'header': [1, 2, 3, false] }],
+          [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+          ['link', 'image', 'code-block'],
+          [{ 'align': [] }],
+          ['clean']
+        ]
+      }
+    });
+
+    // Add some interactive feedback
+    const inputs = document.querySelectorAll('.input-field');
+    inputs.forEach(input => {
+      input.addEventListener('focus', function() {
+        this.style.transform = 'translateY(-2px)';
+      });
+      
+      input.addEventListener('blur', function() {
+        this.style.transform = 'translateY(0)';
+      });
+    });
+
+    // async function submitQuestion() {
+    //   const title = document.getElementById('title').value;
+    //   const description = quill.root.innerHTML;
+    //   const tags = document.getElementById('tags').value.split(',').map(tag => tag.trim()).filter(tag => tag);
+
+    //   // Validation
+    //   if (!title.trim()) {
+    //     alert('Please enter a question title');
+    //     document.getElementById('title').focus();
+    //     return;
+    //   }
+
+    //   if (quill.getText().trim().length < 10) {
+    //     alert('Please provide a more detailed description');
+    //     quill.focus();
+    //     return;
+    //   }
+
+    //   try {
+    //     const loadingBtn = event.target;
+    //     loadingBtn.innerHTML = 'Publishing...';
+    //     loadingBtn.disabled = true;
+
+    //     const res = await axios.post('https://your-backend-api.com/api/questions', {
+    //       title,
+    //       description,
+    //       tags,
+    //       userId: 'demo-user-1'
+    //     });
+        
+    //     // Success animation
+    //     loadingBtn.innerHTML = '✓ Published Successfully!';
+    //     loadingBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+        
+    //     setTimeout(() => {
+    //       alert('Question submitted successfully!');
+    //       // Reset form
+    //       document.getElementById('title').value = '';
+    //       quill.setContents([]);
+    //       document.getElementById('tags').value = '';
+          
+    //       loadingBtn.innerHTML = 'Publish Question';
+    //       loadingBtn.style.background = 'linear-gradient(135deg, var(--beige-600) 0%, var(--beige-700) 100%)';
+    //       loadingBtn.disabled = false;
+    //     }, 1500);
+
+
+    async function submitQuestion() {
+    const title = document.getElementById('title').value;
+    const description = quill.root.innerHTML;
+    const tags = document.getElementById('tags').value
+        .split(',')
+        .map(tag => tag.trim())
+        .filter(tag => tag);
+
+    // Validation
+    if (!title.trim()) {
+        alert('Please enter a question title');
+        return;
+    }
+
+    const loadingBtn = event.target;
+    try {
+        loadingBtn.innerHTML = 'Publishing...';
+        loadingBtn.disabled = true;
+
+        await questionService.createQuestion({
+            title,
+            description,
+            tags
+        });
+
+        // Success feedback
+        loadingBtn.innerHTML = '✓ Published Successfully!';
+        loadingBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+
+        // Reset form after delay
+        setTimeout(() => {
+            window.location.href = 'main.html'; // Redirect to main page
+        }, 1500);
+
+    } catch (error) {
+        console.error('Error:', error);
+        alert(error.response?.data?.message || 'Failed to submit question');
+        loadingBtn.innerHTML = 'Publish Question';
+        loadingBtn.disabled = false;
+    }
+}
+        
+    //   } catch (err) {
+    //     console.error(err);
+    //     alert('Failed to submit question. Please try again.');
+        
+    //     event.target.innerHTML = 'Publish Question';
+    //     event.target.disabled = false;
+    //   }
+    // }
+  </script>
+</body>
+</html>
